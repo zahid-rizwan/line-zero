@@ -20,9 +20,9 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   bool _isDevQuickLoginExpanded = false;
 
   // Controllers
-  final _emailController = TextEditingController(text: 'admin@queuetoken.app');
-  final _passwordController = TextEditingController(text: 'admin123');
-  final _nameController = TextEditingController(text: 'Customer User');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
 
   bool _obscurePassword = true;
 

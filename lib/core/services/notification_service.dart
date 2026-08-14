@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_service.dart';
 
 @pragma('vm:entry-point')
@@ -74,6 +75,9 @@ class NotificationService {
     // 2. Initialize Firebase Messaging (if initialized)
     if (FirebaseService.isInitialized) {
       try {
+        // Always register top-level background & killed app handler
+        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
         final messaging = FirebaseMessaging.instance;
         final settings = await messaging.requestPermission(
           alert: true,
@@ -84,9 +88,6 @@ class NotificationService {
         if (settings.authorizationStatus == AuthorizationStatus.authorized) {
           _fcmToken = await messaging.getToken();
           debugPrint('FCM Device Token: $_fcmToken');
-
-          // Register Top-Level Background Message Handler
-          FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
           // Listen to Foreground Push Messages
           FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -101,6 +102,23 @@ class NotificationService {
       } catch (e) {
         debugPrint('FCM Messaging init notice: $e');
       }
+    }
+  }
+
+  /// Syncs current device FCM token to Firestore user document
+  Future<void> syncFcmTokenToFirestore(String userId) async {
+    if (!FirebaseService.isInitialized) return;
+    try {
+      final token = _fcmToken ?? await FirebaseMessaging.instance.getToken();
+      if (token != null && token.isNotEmpty) {
+        _fcmToken = token;
+        await FirebaseFirestore.instance.collection('users').doc(userId).set({
+          'fcmToken': token,
+        }, SetOptions(merge: true));
+        debugPrint('FCM Token successfully synced to Firestore for user: $userId');
+      }
+    } catch (e) {
+      debugPrint('syncFcmTokenToFirestore error: $e');
     }
   }
 

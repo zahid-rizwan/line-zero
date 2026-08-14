@@ -3,6 +3,7 @@ import 'package:queue_token_app/features/admin/presentation/screens/admin_dashbo
 import 'package:queue_token_app/features/auth/domain/entities/user_entity.dart';
 import 'package:queue_token_app/features/queue/presentation/screens/customer_shop_list_screen.dart';
 import 'package:queue_token_app/features/shop/presentation/screens/owner_dashboard_screen.dart';
+import 'package:queue_token_app/core/services/notification_service.dart';
 
 class AppRootRouter extends StatelessWidget {
   final UserEntity user;
@@ -11,6 +12,9 @@ class AppRootRouter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sync FCM Device Token to Firestore for backend push notifications
+    NotificationService.instance.syncFcmTokenToFirestore(user.id);
+
     // 1. Super Admin Role
     if (user.role == 'admin') {
       return AdminDashboardScreen(adminUser: user);
