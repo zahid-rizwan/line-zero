@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'core/services/firebase_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/firebase_service.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/usecases/auth_usecases.dart';
@@ -10,17 +10,23 @@ import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/auth/presentation/screens/app_root_router.dart';
 import 'features/auth/presentation/screens/phone_auth_screen.dart';
-import 'features/queue/data/datasources/queue_remote_data_source.dart';
-import 'features/queue/data/repositories/queue_repository_impl.dart';
-import 'features/queue/domain/usecases/queue_usecases.dart';
-import 'features/queue/presentation/bloc/queue_bloc.dart';
+
 import 'features/shop/data/datasources/shop_remote_data_source.dart';
 import 'features/shop/data/repositories/shop_repository_impl.dart';
 import 'features/shop/domain/usecases/shop_usecases.dart';
 import 'features/shop/presentation/bloc/shop_bloc.dart';
 
-import 'core/services/notification_service.dart';
+import 'features/queue/data/datasources/queue_remote_data_source.dart';
+import 'features/queue/data/repositories/queue_repository_impl.dart';
+import 'features/queue/domain/usecases/queue_usecases.dart';
+import 'features/queue/presentation/bloc/queue_bloc.dart';
 
+import 'features/subscription/data/datasources/subscription_remote_data_source.dart';
+import 'features/subscription/data/repositories/subscription_repository_impl.dart';
+import 'features/subscription/domain/usecases/subscription_usecases.dart';
+import 'features/subscription/presentation/bloc/subscription_bloc.dart';
+
+import 'core/services/notification_service.dart';
 import 'core/widgets/splash_screen.dart';
 import 'core/widgets/app_entry_gate.dart';
 
@@ -41,11 +47,13 @@ class QTokenApp extends StatelessWidget {
     final authRemoteDataSource = AuthRemoteDataSourceImpl();
     final shopRemoteDataSource = ShopRemoteDataSourceImpl();
     final queueRemoteDataSource = QueueRemoteDataSourceImpl();
+    final subscriptionRemoteDataSource = SubscriptionRemoteDataSourceImpl();
 
     // Repositories
     final authRepository = AuthRepositoryImpl(authRemoteDataSource);
     final shopRepository = ShopRepositoryImpl(shopRemoteDataSource);
     final queueRepository = QueueRepositoryImpl(queueRemoteDataSource);
+    final subscriptionRepository = SubscriptionRepositoryImpl(subscriptionRemoteDataSource);
 
     // Use Cases
     final signUpWithEmail = SignUpWithEmail(authRepository);
@@ -67,6 +75,10 @@ class QTokenApp extends StatelessWidget {
     final joinQueue = JoinQueue(queueRepository);
     final updateTicketStatus = UpdateTicketStatus(queueRepository);
     final callNextTicket = CallNextTicket(queueRepository);
+
+    final getSubscriptionStatus = GetSubscriptionStatus(subscriptionRepository);
+    final subscribeShop = SubscribeShop(subscriptionRepository);
+    final restorePurchases = RestorePurchases(subscriptionRepository);
 
     return MultiBlocProvider(
       providers: [
@@ -97,6 +109,13 @@ class QTokenApp extends StatelessWidget {
             joinQueue: joinQueue,
             updateTicketStatus: updateTicketStatus,
             callNextTicket: callNextTicket,
+          ),
+        ),
+        BlocProvider<SubscriptionBloc>(
+          create: (_) => SubscriptionBloc(
+            getSubscriptionStatus: getSubscriptionStatus,
+            subscribeShop: subscribeShop,
+            restorePurchases: restorePurchases,
           ),
         ),
       ],

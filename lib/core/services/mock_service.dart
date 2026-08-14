@@ -148,6 +148,7 @@ class MockDatabaseService {
   final List<MockShop> _shops = [];
   final Map<String, List<MockTicket>> _queues = {}; // shopId -> List<MockTicket>
   final Map<String, int> _lastTokenCounters = {}; // shopId -> int counter
+  final Map<String, Map<String, dynamic>> _subscriptions = {}; // shopId -> subscription map
   final _queueStreamControllers = <String, StreamController<List<MockTicket>>>{};
 
   void _initDefaultData() {
@@ -508,5 +509,42 @@ class MockDatabaseService {
       );
     }
   }
+
+  // Subscription Operations
+  Map<String, dynamic> getSubscriptionData(String shopId) {
+    if (!_subscriptions.containsKey(shopId)) {
+      final now = DateTime.now();
+      _subscriptions[shopId] = {
+        'shopId': shopId,
+        'status': 'trial',
+        'plan': null,
+        'trialEndsAt': now.add(const Duration(days: 30)).toIso8601String(),
+        'currentPeriodEnd': null,
+        'playPurchaseToken': null,
+        'createdAt': now.toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+      };
+    }
+    return _subscriptions[shopId]!;
+  }
+
+  Map<String, dynamic> subscribeShop(String shopId, String plan, String? purchaseToken) {
+    final now = DateTime.now();
+    final days = plan == 'yearly' ? 365 : 30;
+    final periodEnd = now.add(Duration(days: days));
+    final subData = {
+      'shopId': shopId,
+      'status': 'active',
+      'plan': plan,
+      'trialEndsAt': now.subtract(const Duration(days: 1)).toIso8601String(),
+      'currentPeriodEnd': periodEnd.toIso8601String(),
+      'playPurchaseToken': purchaseToken ?? 'mock-token-${now.millisecondsSinceEpoch}',
+      'createdAt': _subscriptions[shopId]?['createdAt'] ?? now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+    };
+    _subscriptions[shopId] = subData;
+    return subData;
+  }
 }
+
 

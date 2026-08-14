@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 abstract class AppColors {
   // Primary (Trust Blue)
   static const Color primary = Color(0xFF2C6FB0);
+  static const Color trustBlue = Color(0xFF2C6FB0);
   static const Color primaryLight = Color(0xFFE6F1FB);
   static const Color primaryDark = Color(0xFF1E4E7C);
 
@@ -19,6 +20,7 @@ abstract class AppColors {
 
   // Urgent / Alert (Coral Red)
   static const Color warningUrgent = Color(0xFFD85A30);
+  static const Color coralRed = Color(0xFFD85A30);
   static const Color warningLight = Color(0xFFFEE2E2);
 
   // Skipped / Secondary Status
@@ -34,6 +36,7 @@ abstract class AppColors {
 
   // Dark Mode Tokens
   static const Color darkBackground = Color(0xFF111827);
+  static const Color slateDark = Color(0xFF111827);
   static const Color darkCard = Color(0xFF1F2937);
   static const Color darkText = Color(0xFFF3F4F6);
   static const Color darkBorder = Color(0xFF374151);
