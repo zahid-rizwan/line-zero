@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(shopId) {
+      return isAuthenticated() && get(/databases/$(database)/documents/shops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+
+    function isTicketCustomer() {
+      return isAuthenticated() && request.auth.uid == resource.data.customerId;
+    }
+
+    // Shops Collection
+    match /shops/{shopId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.ownerId;
+
+      // Queue Subcollection
+      match /queue/{ticketId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId;
+        
+        // Owner can update any ticket status (call next, skip, complete)
+        // Customer can only cancel their own active ticket
+        allow update: if isOwner(shopId) || 
+          (isTicketCustomer() && request.resource.data.status == 'cancelled');
+      }
+    }
+
+    // Users Collection
+    match /users/{uid} {
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+    }
+  }
+}

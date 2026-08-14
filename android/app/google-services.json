@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "492295806420",
+    "project_id": "token-system-ba96a",
+    "storage_bucket": "token-system-ba96a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:492295806420:android:d576b18b53636de0af0a41",
+        "android_client_info": {
+          "package_name": "com.queuetoken.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDq-6yRgcwflLlinu_Ij1oLMevmyppBM4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
