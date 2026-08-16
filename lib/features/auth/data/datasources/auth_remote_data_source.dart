@@ -55,7 +55,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   Future<void> _clearSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await prefs.remove(_keyUserId);
+    await prefs.remove(_keyUserName);
+    await prefs.remove(_keyUserPhone);
+    await prefs.remove(_keyUserRole);
   }
 
   @override
@@ -163,20 +166,27 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       } on FirebaseAuthException catch (e) {
         debugPrint('Firebase signInWithEmail auth error: ${e.code} - ${e.message}');
         if (e.code == 'invalid-credential' || e.code == 'wrong-password' || e.code == 'user-not-found') {
-          throw Exception('The supplied auth credential is incorrect or expired.');
+          throw Exception('Incorrect password or email. Please try again.');
         } else if (e.code == 'invalid-email') {
           throw Exception('Invalid email address format.');
         } else if (e.code == 'user-disabled') {
           throw Exception('This user account has been disabled.');
         } else {
-          throw Exception(e.message ?? 'Authentication failed. Please check credentials.');
+          throw Exception('Incorrect password or email. Please try again.');
         }
       } catch (e) {
-        throw Exception(e.toString().replaceAll('Exception: ', ''));
+        throw Exception('Incorrect password or email. Please try again.');
       }
     }
 
     // Local Registered User Validation (if running in offline/mock mode)
+    if (cleanEmail == 'admin@queuetoken.app' && password != 'admin123') {
+      throw Exception('Incorrect password or email. Please try again.');
+    }
+    if (cleanEmail == 'owner@clinic.com' && password != 'owner123') {
+      throw Exception('Incorrect password or email. Please try again.');
+    }
+
     final registeredMockUser = mockDb.getUserByEmail(cleanEmail);
     String assignedRole = registeredMockUser?.role ?? 'customer';
     if (assignedRole == 'customer') {

@@ -23,6 +23,9 @@ migrate_working_dir/
 .env.*
 !.env.example
 lib/firebase_options.dart
+android/key.properties
+*.jks
+*.keystore
 
 # IDE & Editor Settings
 *.iml

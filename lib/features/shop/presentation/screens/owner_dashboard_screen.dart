@@ -17,6 +17,11 @@ import '../bloc/shop_bloc.dart';
 import '../bloc/shop_event.dart';
 import '../bloc/shop_state.dart';
 import 'create_shop_screen.dart';
+import '../../../subscription/presentation/bloc/subscription_bloc.dart';
+import '../../../subscription/presentation/bloc/subscription_event.dart';
+import '../../../subscription/presentation/bloc/subscription_state.dart';
+import '../../../subscription/domain/entities/subscription_entity.dart';
+import '../../../subscription/presentation/screens/paywall_screen.dart';
 
 class OwnerDashboardScreen extends StatefulWidget {
   final String ownerId;
@@ -98,13 +103,8 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                               child: InkWell(
                                 onTap: () {
                                   Navigator.of(dialogContext).pop();
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    if (context.mounted) {
-                                      Navigator.of(context).popUntil((route) => route.isFirst);
-                                      context.read<QueueBloc>().add(ResetQueueState());
-                                      context.read<AuthBloc>().add(AuthSignOutRequested());
-                                    }
-                                  });
+                                  context.read<QueueBloc>().add(ResetQueueState());
+                                  context.read<AuthBloc>().add(AuthSignOutRequested());
                                 },
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
@@ -184,6 +184,78 @@ class _OwnerDashboardContentState extends State<_OwnerDashboardContent> {
   void initState() {
     super.initState();
     context.read<QueueBloc>().add(WatchQueueRequested(widget.shop.id));
+    context.read<SubscriptionBloc>().add(SubscriptionFetchRequested(widget.shop.id));
+  }
+
+  Widget _buildSubscriptionHeaderBadge(SubscriptionEntity? subscription, bool isDark) {
+    if (subscription == null) return const SizedBox.shrink();
+
+    if (subscription.isActive) {
+      return Container(
+        width: double.infinity,
+        color: Colors.green.withValues(alpha: 0.1),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            const Icon(Icons.star_rounded, color: Colors.green, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Pro Subscription Active (${subscription.plan == 'yearly' ? 'Yearly' : 'Monthly'})',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final daysLeft = subscription.daysLeftInTrial;
+    final isExpired = subscription.isExpired;
+
+    return Container(
+      width: double.infinity,
+      color: isExpired ? AppColors.coralRed.withValues(alpha: 0.1) : AppColors.amber.withValues(alpha: 0.12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Icon(
+            isExpired ? Icons.lock_clock_rounded : Icons.timer_rounded,
+            color: isExpired ? AppColors.coralRed : AppColors.amber,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              isExpired
+                  ? 'Free Trial Expired — Dashboard Locked'
+                  : 'Free Trial: $daysLeft Day${daysLeft == 1 ? '' : 's'} Remaining',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.bold,
+                color: isExpired ? AppColors.coralRed : (isDark ? AppColors.amber : Colors.brown.shade800),
+                fontSize: 13,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => PaywallScreen(shopId: widget.shop.id, shopName: widget.shop.name),
+              );
+            },
+            child: Text(
+              isExpired ? 'Unlock Now' : 'Upgrade',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.bold,
+                color: isExpired ? AppColors.coralRed : AppColors.trustBlue,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -191,221 +263,244 @@ class _OwnerDashboardContentState extends State<_OwnerDashboardContent> {
     final shop = widget.shop;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.darkBackground
-          : const Color(0xFFF9FAFB),
-      body: Column(
-        children: [
-          // Shop Status Header Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: isDark ? AppColors.darkCard : AppColors.white,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            shop.name,
-                            style: GoogleFonts.inter(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? AppColors.darkText
-                                  : AppColors.neutralDark,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${shop.category} • ${shop.address}',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: AppColors.neutralMid,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Row(
+    return BlocBuilder<SubscriptionBloc, SubscriptionState>(
+      builder: (context, subState) {
+        SubscriptionEntity? subscription;
+        if (subState is SubscriptionLoaded) {
+          subscription = subState.subscription;
+        }
+
+        final isExpired = subscription?.isExpired ?? false;
+
+        return Scaffold(
+          backgroundColor: isDark
+              ? AppColors.darkBackground
+              : const Color(0xFFF9FAFB),
+          body: Stack(
+            children: [
+              Column(
+                children: [
+                  _buildSubscriptionHeaderBadge(subscription, isDark),
+                  // Shop Status Header Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    color: isDark ? AppColors.darkCard : AppColors.white,
+                    child: Column(
                       children: [
-                        Text(
-                          shop.isQueueOpen ? 'OPEN' : 'CLOSED',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: shop.isQueueOpen
-                                ? AppColors.success
-                                : AppColors.warningUrgent,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Switch(
-                          value: shop.isQueueOpen,
-                          activeThumbColor: AppColors.success,
-                          onChanged: (val) {
-                            context.read<ShopBloc>().add(
-                              ShopToggleQueueRequested(
-                                shopId: shop.id,
-                                isOpen: val,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          Divider(
-            height: 1,
-            color: isDark ? AppColors.darkBorder : AppColors.border,
-          ),
-
-          // Live Queue Stream View
-          Expanded(
-            child: BlocBuilder<QueueBloc, QueueState>(
-              builder: (context, queueState) {
-                if (queueState is QueueLoading) {
-                  return const SkeletonCardList(count: 3);
-                }
-
-                if (queueState is QueueLoaded) {
-                  final tickets = queueState.tickets;
-                  final activeTickets = tickets
-                      .where((t) => !t.isCompleted && !t.isCancelled)
-                      .toList();
-                  final inServiceTicket = tickets
-                      .where((t) => t.isInService)
-                      .firstOrNull;
-                  final waitingCount = tickets.where((t) => t.isWaiting).length;
-
-                  if (activeTickets.isEmpty) {
-                    return const EmptyStateWidget(
-                      icon: Icons.people_outline_rounded,
-                      title: 'Queue is Empty',
-                      subtitle: 'No customers waiting in line right now.',
-                    );
-                  }
-
-                  return Column(
-                    children: [
-                      // Overview Stats Bar
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        color: isDark
-                            ? AppColors.darkCard
-                            : AppColors.primaryLight.withValues(alpha: 0.4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildStatItem(
-                              'Currently Serving',
-                              inServiceTicket != null
-                                  ? '#${inServiceTicket.tokenNumber.toString().padLeft(3, '0')}'
-                                  : 'None',
-                              AppColors.amber,
-                              isDark,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    shop.name,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark
+                                          ? AppColors.darkText
+                                          : AppColors.neutralDark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${shop.category} • ${shop.address}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: AppColors.neutralMid,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
-                            Container(
-                              height: 24,
-                              width: 1,
-                              color: isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.border,
-                            ),
-                            _buildStatItem(
-                              'Waiting in Line',
-                              '$waitingCount customers',
-                              AppColors.primary,
-                              isDark,
+                            Row(
+                              children: [
+                                Text(
+                                  shop.isQueueOpen ? 'OPEN' : 'CLOSED',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: shop.isQueueOpen
+                                        ? AppColors.success
+                                        : AppColors.warningUrgent,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Switch(
+                                  value: shop.isQueueOpen,
+                                  activeThumbColor: AppColors.success,
+                                  onChanged: (val) {
+                                    context.read<ShopBloc>().add(
+                                      ShopToggleQueueRequested(
+                                        shopId: shop.id,
+                                        isOpen: val,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
 
-                      Expanded(
-                        child: RefreshIndicator(
-                          color: AppColors.primary,
-                          onRefresh: () async {
-                            context.read<QueueBloc>().add(
-                              WatchQueueRequested(shop.id),
+                  Divider(
+                    height: 1,
+                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                  ),
+
+                  // Live Queue Stream View
+                  Expanded(
+                    child: BlocBuilder<QueueBloc, QueueState>(
+                      builder: (context, queueState) {
+                        if (queueState is QueueLoading) {
+                          return const SkeletonCardList(count: 3);
+                        }
+
+                        if (queueState is QueueLoaded) {
+                          final tickets = queueState.tickets;
+                          final activeTickets = tickets
+                              .where((t) => !t.isCompleted && !t.isCancelled)
+                              .toList();
+                          final inServiceTicket = tickets
+                              .where((t) => t.isInService)
+                              .firstOrNull;
+                          final waitingCount = tickets.where((t) => t.isWaiting).length;
+
+                          if (activeTickets.isEmpty) {
+                            return const EmptyStateWidget(
+                              icon: Icons.people_outline_rounded,
+                              title: 'Queue is Empty',
+                              subtitle: 'No customers waiting in line right now.',
                             );
-                            await Future.delayed(
-                              const Duration(milliseconds: 600),
-                            );
-                          },
-                          child: ListView.separated(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
-                            itemCount: activeTickets.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final ticket = activeTickets[index];
-                              return _buildOwnerTicketRow(ticket, isDark);
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }
+                          }
 
-                return const EmptyStateWidget(
-                  icon: Icons.cloud_off_rounded,
-                  title: 'Disconnected',
-                  subtitle: 'Unable to connect to live queue stream.',
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+                          return Column(
+                            children: [
+                              // Overview Stats Bar
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                color: isDark
+                                    ? AppColors.darkCard
+                                    : AppColors.primaryLight.withValues(alpha: 0.4),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildStatItem(
+                                      'Currently Serving',
+                                      inServiceTicket != null
+                                          ? '#${inServiceTicket.tokenNumber.toString().padLeft(3, '0')}'
+                                          : 'None',
+                                      AppColors.amber,
+                                      isDark,
+                                    ),
+                                    Container(
+                                      height: 24,
+                                      width: 1,
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : AppColors.border,
+                                    ),
+                                    _buildStatItem(
+                                      'Waiting in Line',
+                                      '$waitingCount customers',
+                                      AppColors.primary,
+                                      isDark,
+                                    ),
+                                  ],
+                                ),
+                              ),
 
-      // Pinned Bottom Bar: CALL NEXT CUSTOMER (Always Visible)
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : AppColors.white,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? AppColors.darkBorder : AppColors.border,
+                              Expanded(
+                                child: RefreshIndicator(
+                                  color: AppColors.primary,
+                                  onRefresh: () async {
+                                    context.read<QueueBloc>().add(
+                                      WatchQueueRequested(shop.id),
+                                    );
+                                    await Future.delayed(
+                                      const Duration(milliseconds: 600),
+                                    );
+                                  },
+                                  child: ListView.separated(
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.all(16),
+                                    itemCount: activeTickets.length,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final ticket = activeTickets[index];
+                                      return _buildOwnerTicketRow(ticket, isDark);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return const EmptyStateWidget(
+                          icon: Icons.cloud_off_rounded,
+                          title: 'Disconnected',
+                          subtitle: 'Unable to connect to live queue stream.',
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              if (isExpired)
+                Positioned.fill(
+                  child: PaywallScreen(
+                    shopId: widget.shop.id,
+                    shopName: widget.shop.name,
+                  ),
+                ),
+            ],
+          ),
+
+          // Pinned Bottom Bar: CALL NEXT CUSTOMER (Always Visible)
+          bottomNavigationBar: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCard : AppColors.white,
+              border: Border(
+                top: BorderSide(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: CustomButton(
+                label: 'Call Next Customer',
+                icon: Icons.campaign_rounded,
+                color: AppColors.primary,
+                onPressed: (shop.isQueueOpen && !isExpired)
+                    ? () {
+                        context.read<QueueBloc>().add(CallNextRequested(shop.id));
+                      }
+                    : null,
+              ),
             ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: CustomButton(
-            label: 'Call Next Customer',
-            icon: Icons.campaign_rounded,
-            color: AppColors.primary,
-            onPressed: shop.isQueueOpen
-                ? () {
-                    context.read<QueueBloc>().add(CallNextRequested(shop.id));
-                  }
-                : null,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 

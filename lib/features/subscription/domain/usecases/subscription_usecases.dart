@@ -1,0 +1,56 @@
+import '../entities/subscription_entity.dart';
+import '../entities/pricing_config_entity.dart';
+import '../repositories/subscription_repository.dart';
+
+class GetSubscriptionStatus {
+  final SubscriptionRepository repository;
+  GetSubscriptionStatus(this.repository);
+
+  Future<SubscriptionEntity> call(String shopId) {
+    return repository.getSubscriptionStatus(shopId);
+  }
+}
+
+class SubscribeShop {
+  final SubscriptionRepository repository;
+  SubscribeShop(this.repository);
+
+  Future<SubscriptionEntity> call({
+    required String shopId,
+    required String plan,
+    String? purchaseToken,
+  }) {
+    return repository.subscribeShop(
+      shopId: shopId,
+      plan: plan,
+      purchaseToken: purchaseToken,
+    );
+  }
+}
+
+class RestorePurchases {
+  final SubscriptionRepository repository;
+  RestorePurchases(this.repository);
+
+  Future<SubscriptionEntity> call(String shopId) {
+    return repository.restorePurchases(shopId);
+  }
+}
+
+class GetPricingConfig {
+  final SubscriptionRepository repository;
+  GetPricingConfig(this.repository);
+
+  Future<PricingConfigEntity> call() {
+    return repository.getPricingConfig();
+  }
+}
+
+class UpdatePricingConfig {
+  final SubscriptionRepository repository;
+  UpdatePricingConfig(this.repository);
+
+  Future<void> call(PricingConfigEntity config) {
+    return repository.updatePricingConfig(config);
+  }
+}
