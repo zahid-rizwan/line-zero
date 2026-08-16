@@ -18,6 +18,10 @@ import 'package:queue_token_app/features/queue/presentation/bloc/queue_bloc.dart
 import 'package:queue_token_app/features/queue/presentation/bloc/queue_event.dart';
 import 'package:queue_token_app/core/widgets/skeleton_loader.dart';
 import 'admin_shop_details_screen.dart';
+import 'package:queue_token_app/features/subscription/domain/entities/pricing_config_entity.dart';
+import 'package:queue_token_app/features/subscription/presentation/bloc/subscription_bloc.dart';
+import 'package:queue_token_app/features/subscription/presentation/bloc/subscription_event.dart';
+import 'package:queue_token_app/features/subscription/presentation/bloc/subscription_state.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final UserEntity adminUser;
@@ -322,7 +326,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       controller: ownerPasswordController,
                       obscureText: obscureOwnerPassword,
                       decoration: _buildInputDecoration(
-                        hintText: 'Assign Owner Password',
+                        hintText: 'Assign Owner Password (min 6 chars, default: owner123)',
                         icon: Icons.lock_outline_rounded,
                         isDark: isDark,
                         suffixIcon: IconButton(
@@ -337,6 +341,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             () => obscureOwnerPassword = !obscureOwnerPassword,
                           ),
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '* Password must be at least 6 characters. Leave blank for default "owner123".',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: AppColors.neutralMid,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -362,9 +374,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           return;
                         }
 
+                        if (ownerPass.isNotEmpty && ownerPass.length < 6) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                '⚠️ Owner password must be at least 6 characters long.',
+                              ),
+                              backgroundColor: AppColors.warningUrgent,
+                            ),
+                          );
+                          return;
+                        }
+
                         final ownerDisplayName = ownerNameController.text
                             .trim();
                         final cleanOwnerEmail = ownerEmail.toLowerCase().trim();
+
+                        String finalOwnerPass = ownerPass.trim();
+                        if (finalOwnerPass.isEmpty || finalOwnerPass.length < 6) {
+                          finalOwnerPass = 'owner123';
+                        }
 
                         String newOwnerId =
                             'owner-${DateTime.now().millisecondsSinceEpoch}';
@@ -373,9 +402,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           final firebaseUid =
                               await FirebaseService.createFirebaseOwnerAuthAccount(
                                 email: cleanOwnerEmail,
-                                password: ownerPass.isEmpty
-                                    ? 'owner123'
-                                    : ownerPass,
+                                password: finalOwnerPass,
                                 name: ownerDisplayName.isEmpty
                                     ? 'Shop Owner'
                                     : ownerDisplayName,
@@ -413,7 +440,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Shop "$shopName" created! Owner login: $ownerEmail (Pass: ${ownerPass.isEmpty ? "owner123" : ownerPass})',
+                              'Shop "$shopName" created! Owner login: $cleanOwnerEmail (Pass: $finalOwnerPass)',
                             ),
                             backgroundColor: AppColors.success,
                             duration: const Duration(seconds: 5),
@@ -424,6 +451,213 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ],
                 ),
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _openPricingControllerModal(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    context.read<SubscriptionBloc>().add(PricingConfigFetchRequested());
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.darkCard : AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) {
+        return BlocBuilder<SubscriptionBloc, SubscriptionState>(
+          builder: (context, state) {
+            PricingConfigEntity config = PricingConfigEntity.defaultConfig();
+            if (state is PricingConfigLoaded) {
+              config = state.config;
+            } else if (state is SubscriptionLoaded) {
+              config = state.pricingConfig;
+            }
+
+            final monthlyController = TextEditingController(text: config.monthlyPrice.toString());
+            final yearlyController = TextEditingController(text: config.yearlyPrice.toString());
+            final saleMonthlyController = TextEditingController(text: config.saleMonthlyPrice.toString());
+            final saleYearlyController = TextEditingController(text: config.saleYearlyPrice.toString());
+            final discountController = TextEditingController(text: config.discountPercentage.toString());
+            final bannerController = TextEditingController(text: config.saleBannerText);
+            bool isSaleActive = config.isSaleActive;
+
+            return StatefulBuilder(
+              builder: (modalCtx, setModalState) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    top: 20,
+                    left: 24,
+                    right: 24,
+                    bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkBorder : AppColors.border,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const Icon(Icons.sell_rounded, color: AppColors.amber, size: 24),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Pricing & Sale Control',
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? AppColors.darkText : AppColors.neutralDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Update pricing dynamically across all shops or toggle live sale offers.',
+                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.neutralMid),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Toggle Sale Mode
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Activate Sale Discount Mode',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? AppColors.darkText : AppColors.neutralDark,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Show discounted prices & sale banner on Paywall screen',
+                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.neutralMid),
+                          ),
+                          value: isSaleActive,
+                          activeColor: AppColors.amber,
+                          onChanged: (val) {
+                            setModalState(() {
+                              isSaleActive = val;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Normal Prices
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: monthlyController,
+                                keyboardType: TextInputType.number,
+                                decoration: _buildInputDecoration(
+                                  hintText: '1',
+                                  icon: Icons.currency_rupee,
+                                  isDark: isDark,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                controller: yearlyController,
+                                keyboardType: TextInputType.number,
+                                decoration: _buildInputDecoration(
+                                  hintText: '12',
+                                  icon: Icons.calendar_today_rounded,
+                                  isDark: isDark,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Sale Prices
+                        if (isSaleActive) ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: saleMonthlyController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: _buildInputDecoration(
+                                    hintText: 'Sale Monthly (199)',
+                                    icon: Icons.local_offer_rounded,
+                                    isDark: isDark,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: saleYearlyController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: _buildInputDecoration(
+                                    hintText: 'Sale Yearly (1999)',
+                                    icon: Icons.local_offer_rounded,
+                                    isDark: isDark,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: bannerController,
+                            decoration: _buildInputDecoration(
+                              hintText: 'Sale Banner Text',
+                              icon: Icons.campaign_rounded,
+                              isDark: isDark,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        CustomButton(
+                          label: 'Save Pricing Changes',
+                          icon: Icons.save_rounded,
+                          color: AppColors.primary,
+                          onPressed: () {
+                            final updated = PricingConfigEntity(
+                              monthlyPrice: int.tryParse(monthlyController.text.trim()) ?? 299,
+                              yearlyPrice: int.tryParse(yearlyController.text.trim()) ?? 2799,
+                              discountPercentage: int.tryParse(discountController.text.trim()) ?? 20,
+                              isSaleActive: isSaleActive,
+                              saleBannerText: bannerController.text.trim().isEmpty ? '🔥 SPECIAL SALE!' : bannerController.text.trim(),
+                              saleMonthlyPrice: int.tryParse(saleMonthlyController.text.trim()) ?? 199,
+                              saleYearlyPrice: int.tryParse(saleYearlyController.text.trim()) ?? 1999,
+                            );
+
+                            context.read<SubscriptionBloc>().add(PricingConfigUpdateRequested(updated));
+                            Navigator.of(ctx).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ Subscription pricing updated successfully!'),
+                                backgroundColor: AppColors.trustBlue,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -454,6 +688,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sell_rounded, color: AppColors.amber),
+            tooltip: 'Subscription Pricing & Sale Controller',
+            onPressed: () => _openPricingControllerModal(context),
+          ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Sign Out',
@@ -507,13 +746,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               child: InkWell(
                                 onTap: () {
                                   Navigator.of(dialogContext).pop();
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    if (context.mounted) {
-                                      Navigator.of(context).popUntil((route) => route.isFirst);
-                                      context.read<QueueBloc>().add(ResetQueueState());
-                                      context.read<AuthBloc>().add(AuthSignOutRequested());
-                                    }
-                                  });
+                                  context.read<QueueBloc>().add(ResetQueueState());
+                                  context.read<AuthBloc>().add(AuthSignOutRequested());
                                 },
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
@@ -885,78 +1119,84 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 onPressed: () {
                                   showDialog(
                                     context: context,
-                                    builder: (dialogContext) => AlertDialog(
-                                      backgroundColor: isDark
-                                          ? AppColors.darkCard
-                                          : Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      title: Text(
-                                        'Delete Shop',
-                                        style: GoogleFonts.inter(
-                                          fontWeight: FontWeight.bold,
-                                          color: isDark
-                                              ? AppColors.darkText
-                                              : AppColors.neutralDark,
-                                        ),
-                                      ),
-                                      content: Text(
-                                        'Are you sure you want to delete "${shop.name}"? This action cannot be undone.',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 14,
-                                          color: isDark
-                                              ? AppColors.darkText
-                                              : AppColors.neutralDark,
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(dialogContext),
-                                          child: Text(
-                                            'Cancel',
-                                            style: GoogleFonts.inter(
-                                              color: AppColors.neutralMid,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                AppColors.warningUrgent,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.pop(dialogContext);
-                                            context.read<ShopBloc>().add(
-                                              ShopDeleteRequested(shop.id),
-                                            );
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  '${shop.name} deleted successfully.',
-                                                ),
-                                                backgroundColor:
-                                                    AppColors.neutralDark,
+                                    builder: (dialogContext) => Dialog(
+                                      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Delete Shop',
+                                              style: GoogleFonts.inter(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 18,
+                                                color: isDark ? AppColors.darkText : AppColors.neutralDark,
                                               ),
-                                            );
-                                          },
-                                          child: Text(
-                                            'Delete',
-                                            style: GoogleFonts.inter(
-                                              fontWeight: FontWeight.bold,
                                             ),
-                                          ),
+                                            const SizedBox(height: 10),
+                                            Text(
+                                              'Are you sure you want to delete "${shop.name}"? This action cannot be undone.',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 14,
+                                                color: isDark ? AppColors.darkText.withValues(alpha: 0.8) : AppColors.neutralMid,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 20),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(dialogContext).pop(),
+                                                  child: Text(
+                                                    'Cancel',
+                                                    style: GoogleFonts.inter(
+                                                      color: AppColors.neutralMid,
+                                                      fontWeight: FontWeight.w600,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Material(
+                                                  color: AppColors.warningUrgent,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  child: InkWell(
+                                                    onTap: () {
+                                                      Navigator.of(dialogContext).pop();
+                                                      context.read<ShopBloc>().add(
+                                                            ShopDeleteRequested(shop.id),
+                                                          );
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(
+                                                            '${shop.name} deleted successfully.',
+                                                          ),
+                                                          backgroundColor: AppColors.neutralDark,
+                                                        ),
+                                                      );
+                                                    },
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                                      child: Text(
+                                                        'Delete',
+                                                        style: GoogleFonts.inter(
+                                                          color: Colors.white,
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   );
                                 },

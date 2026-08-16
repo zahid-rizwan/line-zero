@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:queue_token_app/core/theme/app_colors.dart';
 import 'package:queue_token_app/core/widgets/custom_button.dart';
+import '../../domain/entities/pricing_config_entity.dart';
 import '../bloc/subscription_bloc.dart';
 import '../bloc/subscription_event.dart';
 import '../bloc/subscription_state.dart';
@@ -44,112 +45,141 @@ class _PaywallScreenState extends State<PaywallScreen> {
           );
         }
       },
-      child: Container(
-        color: AppColors.slateDark,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              // Header Badge & Icon
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppColors.amber.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.star_rounded,
-                  size: 42,
-                  color: AppColors.amber,
-                ),
-              ),
-              const SizedBox(height: 20),
+      child: BlocBuilder<SubscriptionBloc, SubscriptionState>(
+        builder: (context, state) {
+          PricingConfigEntity pricingConfig = PricingConfigEntity.defaultConfig();
+          if (state is SubscriptionLoaded) {
+            pricingConfig = state.pricingConfig;
+          }
 
-              // Title & Subtitle
-              Text(
-                'Unlock LineZero Pro',
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Free Trial for ${widget.shopName} has ended.\nSubscribe to continue serving customers seamlessly.',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.white70,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 28),
+          final yearlyPrice = pricingConfig.effectiveYearlyPrice;
+          final monthlyPrice = pricingConfig.effectiveMonthlyPrice;
 
-              // Plan Cards (Monthly vs Yearly)
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _buildPlanCard(
-                        planKey: 'yearly',
-                        title: 'Yearly Access',
-                        price: '₹2,799 / year',
-                        subtitle: 'Equivalent to ₹233/month. Billed annually.',
-                        badgeText: 'SAVE 20%',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPlanCard(
-                        planKey: 'monthly',
-                        title: 'Monthly Access',
-                        price: '₹299 / month',
-                        subtitle: 'Flexible month-to-month subscription. Cancel anytime.',
-                        badgeText: null,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Data Reassurance Card
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.shield_outlined, color: AppColors.trustBlue, size: 28),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Text(
-                                'Your shop profile and queue records are completely safe and will unlock instantly upon subscribing.',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: Colors.white70,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+          return Container(
+            color: AppColors.slateDark,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  // Header Badge & Icon
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.amber.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.star_rounded,
+                      size: 42,
+                      color: AppColors.amber,
+                    ),
                   ),
-                ),
-              ),
+                  const SizedBox(height: 16),
 
-              const SizedBox(height: 16),
+                  // Sale Banner if active
+                  if (pricingConfig.isSaleActive) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.amber,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        pricingConfig.saleBannerText,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.slateDark,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
-              // CTA Subscribe Button
-              BlocBuilder<SubscriptionBloc, SubscriptionState>(
-                builder: (context, state) {
-                  final isLoading = state is SubscriptionLoading;
-                  return CustomButton(
-                    label: 'Subscribe Now (${_selectedPlan == 'yearly' ? '₹2,799/yr' : '₹299/mo'})',
-                    isLoading: isLoading,
+                  // Title & Subtitle
+                  Text(
+                    'Unlock LineZero Pro',
+                    style: GoogleFonts.inter(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Free Trial for ${widget.shopName} has ended.\nSubscribe to continue serving customers seamlessly.',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Colors.white70,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Plan Cards (Monthly vs Yearly)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _buildPlanCard(
+                            planKey: 'yearly',
+                            title: 'Yearly Access',
+                            price: '₹$yearlyPrice / year',
+                            originalPrice: pricingConfig.isSaleActive ? '₹${pricingConfig.yearlyPrice}' : null,
+                            subtitle: 'Equivalent to ₹${(yearlyPrice / 12).round()}/month. Billed annually.',
+                            badgeText: 'SAVE ${pricingConfig.discountPercentage}%',
+                          ),
+                          const SizedBox(height: 16),
+                          _buildPlanCard(
+                            planKey: 'monthly',
+                            title: 'Monthly Access',
+                            price: '₹$monthlyPrice / month',
+                            originalPrice: pricingConfig.isSaleActive ? '₹${pricingConfig.monthlyPrice}' : null,
+                            subtitle: 'Flexible month-to-month subscription. Cancel anytime.',
+                            badgeText: null,
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Data Reassurance Card
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.shield_outlined, color: AppColors.trustBlue, size: 28),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Text(
+                                    'Your shop profile and queue records are completely safe and will unlock instantly upon subscribing.',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: Colors.white70,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // CTA Subscribe Button
+                  CustomButton(
+                    label: 'Subscribe Now (${_selectedPlan == 'yearly' ? '₹$yearlyPrice/yr' : '₹$monthlyPrice/mo'})',
+                    isLoading: state is SubscriptionLoading,
                     onPressed: () {
                       context.read<SubscriptionBloc>().add(
                             SubscribeRequested(
@@ -158,31 +188,31 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             ),
                           );
                     },
-                  );
-                },
-              ),
-
-              const SizedBox(height: 12),
-
-              // Restore Purchases Button
-              TextButton(
-                onPressed: () {
-                  context.read<SubscriptionBloc>().add(
-                        RestorePurchasesRequested(widget.shopId),
-                      );
-                },
-                child: Text(
-                  'Restore Previous Purchases',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Colors.white54,
-                    decoration: TextDecoration.underline,
                   ),
-                ),
+
+                  const SizedBox(height: 12),
+
+                  // Restore Purchases Button
+                  TextButton(
+                    onPressed: () {
+                      context.read<SubscriptionBloc>().add(
+                            RestorePurchasesRequested(widget.shopId),
+                          );
+                    },
+                    child: Text(
+                      'Restore Previous Purchases',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.white54,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -191,6 +221,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     required String planKey,
     required String title,
     required String price,
+    String? originalPrice,
     required String subtitle,
     String? badgeText,
   }) {
@@ -271,13 +302,28 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    price,
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? AppColors.trustBlue : Colors.white,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        price,
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected ? AppColors.trustBlue : Colors.white,
+                        ),
+                      ),
+                      if (originalPrice != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          originalPrice,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.white38,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(

@@ -46,6 +46,7 @@ dependencies:
   firebase_messaging: ^16.5.0
   flutter_local_notifications: ^19.0.0
   flutter_tts: ^4.2.3
+  in_app_purchase: ^3.2.3
 
 dev_dependencies:
   flutter_test:

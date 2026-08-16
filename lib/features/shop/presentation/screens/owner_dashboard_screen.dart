@@ -103,13 +103,8 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                               child: InkWell(
                                 onTap: () {
                                   Navigator.of(dialogContext).pop();
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    if (context.mounted) {
-                                      Navigator.of(context).popUntil((route) => route.isFirst);
-                                      context.read<QueueBloc>().add(ResetQueueState());
-                                      context.read<AuthBloc>().add(AuthSignOutRequested());
-                                    }
-                                  });
+                                  context.read<QueueBloc>().add(ResetQueueState());
+                                  context.read<AuthBloc>().add(AuthSignOutRequested());
                                 },
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(

@@ -1,3 +1,5 @@
+import '../../domain/entities/pricing_config_entity.dart';
+
 abstract class SubscriptionEvent {}
 
 class SubscriptionFetchRequested extends SubscriptionEvent {
@@ -20,4 +22,11 @@ class SubscribeRequested extends SubscriptionEvent {
 class RestorePurchasesRequested extends SubscriptionEvent {
   final String shopId;
   RestorePurchasesRequested(this.shopId);
+}
+
+class PricingConfigFetchRequested extends SubscriptionEvent {}
+
+class PricingConfigUpdateRequested extends SubscriptionEvent {
+  final PricingConfigEntity config;
+  PricingConfigUpdateRequested(this.config);
 }

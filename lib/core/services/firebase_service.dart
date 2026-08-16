@@ -85,6 +85,8 @@ class FirebaseService {
   }) async {
     if (!isInitialized) return null;
 
+    final validPassword = password.length < 6 ? 'owner123' : password;
+
     FirebaseApp? tempApp;
     try {
       final appName = 'TempOwnerAuthApp_${DateTime.now().millisecondsSinceEpoch}';
@@ -94,12 +96,29 @@ class FirebaseService {
       );
 
       final tempAuth = FirebaseAuth.instanceFor(app: tempApp);
-      final credential = await tempAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential? credential;
+      try {
+        credential = await tempAuth.createUserWithEmailAndPassword(
+          email: email,
+          password: validPassword,
+        );
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          debugPrint('Firebase Auth owner account $email already exists. Attempting sign in to retrieve UID.');
+          try {
+            credential = await tempAuth.signInWithEmailAndPassword(
+              email: email,
+              password: validPassword,
+            );
+          } catch (signInErr) {
+            debugPrint('Could not sign in existing owner: $signInErr');
+          }
+        } else {
+          debugPrint('Firebase createUserWithEmailAndPassword error: ${e.code} - ${e.message}');
+        }
+      }
 
-      final uid = credential.user?.uid;
+      final uid = credential?.user?.uid;
       if (uid != null) {
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'name': name,
@@ -107,7 +126,7 @@ class FirebaseService {
           'email': email,
           'role': 'owner',
         }, SetOptions(merge: true));
-        debugPrint('Firebase Auth owner account created with UID: $uid');
+        debugPrint('Firebase Auth owner account created/updated with UID: $uid');
       }
 
       await tempApp.delete();

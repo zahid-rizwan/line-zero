@@ -79,6 +79,8 @@ class QTokenApp extends StatelessWidget {
     final getSubscriptionStatus = GetSubscriptionStatus(subscriptionRepository);
     final subscribeShop = SubscribeShop(subscriptionRepository);
     final restorePurchases = RestorePurchases(subscriptionRepository);
+    final getPricingConfig = GetPricingConfig(subscriptionRepository);
+    final updatePricingConfig = UpdatePricingConfig(subscriptionRepository);
 
     return MultiBlocProvider(
       providers: [
@@ -116,6 +118,8 @@ class QTokenApp extends StatelessWidget {
             getSubscriptionStatus: getSubscriptionStatus,
             subscribeShop: subscribeShop,
             restorePurchases: restorePurchases,
+            getPricingConfig: getPricingConfig,
+            updatePricingConfig: updatePricingConfig,
           ),
         ),
       ],

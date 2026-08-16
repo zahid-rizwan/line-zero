@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:queue_token_app/core/services/firebase_service.dart';
 import 'package:queue_token_app/core/services/mock_service.dart';
 import '../../domain/entities/subscription_entity.dart';
+import '../../domain/entities/pricing_config_entity.dart';
 
 abstract class SubscriptionRemoteDataSource {
   Future<SubscriptionEntity> getSubscriptionStatus(String shopId);
@@ -12,10 +14,13 @@ abstract class SubscriptionRemoteDataSource {
     String? purchaseToken,
   });
   Future<SubscriptionEntity> restorePurchases(String shopId);
+  Future<PricingConfigEntity> getPricingConfig();
+  Future<void> updatePricingConfig(PricingConfigEntity config);
 }
 
 class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
   final MockDatabaseService mockDb = MockDatabaseService.instance;
+  final InAppPurchase _iap = InAppPurchase.instance;
 
   @override
   Future<SubscriptionEntity> getSubscriptionStatus(String shopId) async {
@@ -81,6 +86,22 @@ class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
     final periodEnd = now.add(Duration(days: days));
     final token = purchaseToken ?? 'token-${now.millisecondsSinceEpoch}';
 
+    // Trigger Play Billing if available on native device
+    try {
+      final available = await _iap.isAvailable();
+      if (available) {
+        final productId = plan == 'yearly' ? 'yearly_subscription' : 'monthly_subscription';
+        final response = await _iap.queryProductDetails({productId});
+        if (response.productDetails.isNotEmpty) {
+          final productDetails = response.productDetails.first;
+          final purchaseParam = PurchaseParam(productDetails: productDetails);
+          await _iap.buyNonConsumable(purchaseParam: purchaseParam);
+        }
+      }
+    } catch (e) {
+      debugPrint('Play Billing trigger notice: $e');
+    }
+
     if (FirebaseService.isInitialized) {
       try {
         final updateData = {
@@ -120,7 +141,45 @@ class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
 
   @override
   Future<SubscriptionEntity> restorePurchases(String shopId) async {
+    try {
+      final available = await _iap.isAvailable();
+      if (available) {
+        await _iap.restorePurchases();
+      }
+    } catch (e) {
+      debugPrint('Restore purchases notice: $e');
+    }
     return getSubscriptionStatus(shopId);
+  }
+
+  @override
+  Future<PricingConfigEntity> getPricingConfig() async {
+    if (FirebaseService.isInitialized) {
+      try {
+        final doc = await FirebaseFirestore.instance.collection('settings').doc('pricing').get();
+        if (doc.exists && doc.data() != null) {
+          return PricingConfigEntity.fromMap(doc.data()!);
+        }
+      } catch (e) {
+        debugPrint('Firestore pricing fetch notice: $e');
+      }
+    }
+    return mockDb.getPricingConfig();
+  }
+
+  @override
+  Future<void> updatePricingConfig(PricingConfigEntity config) async {
+    if (FirebaseService.isInitialized) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('settings')
+            .doc('pricing')
+            .set(config.toMap(), SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('Firestore pricing update notice: $e');
+      }
+    }
+    mockDb.updatePricingConfig(config);
   }
 
   SubscriptionEntity _mapSubscriptionData(String shopId, Map<String, dynamic> data) {

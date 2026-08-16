@@ -50,69 +50,81 @@ class _AdminShopDetailsScreenState extends State<AdminShopDetailsScreen> {
   void _confirmDeleteShop(BuildContext context, ShopEntity shop, bool isDark) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: isDark ? AppColors.darkCard : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Delete Shop',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: isDark ? AppColors.darkText : AppColors.neutralDark,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${shop.name}"? This action cannot be undone.',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: isDark ? AppColors.darkText.withValues(alpha: 0.8) : AppColors.neutralMid,
-          ),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        actions: [
-          Row(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.inter(
-                    color: AppColors.neutralMid,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
+              Text(
+                'Delete Shop',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: isDark ? AppColors.darkText : AppColors.neutralDark,
                 ),
               ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const SizedBox(height: 10),
+              Text(
+                'Are you sure you want to delete "${shop.name}"? This action cannot be undone.',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: isDark ? AppColors.darkText.withValues(alpha: 0.8) : AppColors.neutralMid,
                 ),
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  context.read<ShopBloc>().add(ShopDeleteRequested(shop.id));
-                  Navigator.pop(context); // Pop shop details screen
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${shop.name} deleted successfully.'),
-                      backgroundColor: AppColors.neutralDark,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.inter(
+                        color: AppColors.neutralMid,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
-                  );
-                },
-                child: Text(
-                  'Delete',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Material(
+                    color: AppColors.warningUrgent,
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.of(dialogContext).pop();
+                        context.read<ShopBloc>().add(ShopDeleteRequested(shop.id));
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${shop.name} deleted successfully.'),
+                            backgroundColor: AppColors.neutralDark,
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        child: Text(
+                          'Delete',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -46,6 +46,16 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
       return;
     }
 
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Password must be at least 6 characters long.'),
+          backgroundColor: AppColors.warningUrgent,
+        ),
+      );
+      return;
+    }
+
     if (_isSignUp) {
       context.read<AuthBloc>().add(
             AuthSignUpWithEmailRequested(
@@ -194,6 +204,36 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
+
+                      // In-Line Error Alert Banner
+                      if (state is AuthFailureState) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.warningUrgent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.warningUrgent.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: AppColors.warningUrgent, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  state.message,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: AppColors.warningUrgent,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // EMAIL AUTH FORM
                       if (_isSignUp) ...[

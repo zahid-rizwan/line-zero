@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'notification_service.dart';
+import '../../features/subscription/domain/entities/pricing_config_entity.dart';
 
 class MockUser {
   final String uid;
@@ -544,6 +545,14 @@ class MockDatabaseService {
     };
     _subscriptions[shopId] = subData;
     return subData;
+  }
+
+  PricingConfigEntity _pricingConfig = PricingConfigEntity.defaultConfig();
+
+  PricingConfigEntity getPricingConfig() => _pricingConfig;
+
+  void updatePricingConfig(PricingConfigEntity config) {
+    _pricingConfig = config;
   }
 }
 

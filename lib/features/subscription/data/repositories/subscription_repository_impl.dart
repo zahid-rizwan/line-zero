@@ -1,4 +1,5 @@
 import '../../domain/entities/subscription_entity.dart';
+import '../../domain/entities/pricing_config_entity.dart';
 import '../../domain/repositories/subscription_repository.dart';
 import '../datasources/subscription_remote_data_source.dart';
 
@@ -28,5 +29,15 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   @override
   Future<SubscriptionEntity> restorePurchases(String shopId) {
     return remoteDataSource.restorePurchases(shopId);
+  }
+
+  @override
+  Future<PricingConfigEntity> getPricingConfig() {
+    return remoteDataSource.getPricingConfig();
+  }
+
+  @override
+  Future<void> updatePricingConfig(PricingConfigEntity config) {
+    return remoteDataSource.updatePricingConfig(config);
   }
 }

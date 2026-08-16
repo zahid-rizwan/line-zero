@@ -1,4 +1,5 @@
 import '../entities/subscription_entity.dart';
+import '../entities/pricing_config_entity.dart';
 import '../repositories/subscription_repository.dart';
 
 class GetSubscriptionStatus {
@@ -33,5 +34,23 @@ class RestorePurchases {
 
   Future<SubscriptionEntity> call(String shopId) {
     return repository.restorePurchases(shopId);
+  }
+}
+
+class GetPricingConfig {
+  final SubscriptionRepository repository;
+  GetPricingConfig(this.repository);
+
+  Future<PricingConfigEntity> call() {
+    return repository.getPricingConfig();
+  }
+}
+
+class UpdatePricingConfig {
+  final SubscriptionRepository repository;
+  UpdatePricingConfig(this.repository);
+
+  Future<void> call(PricingConfigEntity config) {
+    return repository.updatePricingConfig(config);
   }
 }
