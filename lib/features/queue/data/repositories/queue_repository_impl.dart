@@ -31,6 +31,50 @@ class QueueRepositoryImpl implements QueueRepository {
   }
 
   @override
+  Future<TicketEntity> addWalkInTicket({
+    required String shopId,
+    String? customerName,
+  }) {
+    return remoteDataSource.addWalkInTicket(
+      shopId: shopId,
+      customerName: customerName,
+    );
+  }
+
+  @override
+  Future<void> confirmCheckpoint({
+    required String shopId,
+    required String ticketId,
+  }) {
+    return remoteDataSource.confirmCheckpoint(
+      shopId: shopId,
+      ticketId: ticketId,
+    );
+  }
+
+  @override
+  Future<void> moveToPending({
+    required String shopId,
+    required String ticketId,
+  }) {
+    return remoteDataSource.moveToPending(
+      shopId: shopId,
+      ticketId: ticketId,
+    );
+  }
+
+  @override
+  Future<void> readdFromPending({
+    required String shopId,
+    required String ticketId,
+  }) {
+    return remoteDataSource.readdFromPending(
+      shopId: shopId,
+      ticketId: ticketId,
+    );
+  }
+
+  @override
   Future<void> updateTicketStatus({
     required String shopId,
     required String ticketId,

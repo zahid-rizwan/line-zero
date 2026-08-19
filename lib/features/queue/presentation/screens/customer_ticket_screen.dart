@@ -48,6 +48,15 @@ class _CustomerTicketScreenState extends State<CustomerTicketScreen> {
     });
   }
 
+  String _formatTime(DateTime? time) {
+    if (time == null) return '';
+    final local = time.toLocal();
+    final hour = local.hour == 0 ? 12 : (local.hour > 12 ? local.hour - 12 : local.hour);
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
   @override
   void dispose() {
     _graceTimer?.cancel();
@@ -259,23 +268,163 @@ class _CustomerTicketScreenState extends State<CustomerTicketScreen> {
                     context.read<QueueBloc>().add(WatchQueueRequested(widget.shop.id));
                     await Future.delayed(const Duration(milliseconds: 600));
                   },
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                    child: Column(
-                    children: [
-                      // Single Unified Hero Live Ticket Card with breathing pulse animation
-                      TokenCard(
-                        tokenNumber: ticket.tokenNumber,
-                        status: ticket.status,
-                        shopName: widget.shop.name,
-                        position: position,
-                        estimatedWaitMinutes: estimatedMinutes,
-                        currentlyServingTokenNumber: currentlyServingNum,
-                        lastCompletedTokenNumber: lastCompletedNum,
-                        nextWaitingTokenNumber: nextWaitingNum,
-                      ),
-                      const SizedBox(height: 16),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                      child: Column(
+                      children: [
+                        // Checkpoint Confirmation Prompt (Positions <= 3)
+                        if (position != null && position <= 3 && !ticket.isConfirmed && (ticket.isWaiting || ticket.status == 'waiting')) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.trustBlue.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.trustBlue.withValues(alpha: 0.4)),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.verified_user_rounded, color: AppColors.trustBlue, size: 24),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        "You're almost up! Confirm you're on your way to hold your spot.",
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? AppColors.darkText : AppColors.neutralDark,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      context.read<QueueBloc>().add(
+                                            ConfirmCheckpointRequested(
+                                              shopId: widget.shop.id,
+                                              ticketId: ticket.id,
+                                            ),
+                                          );
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('🎉 Spot confirmed! We informed the shop owner.'),
+                                          backgroundColor: AppColors.success,
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.directions_walk_rounded, size: 18),
+                                    label: const Text("I'm On My Way"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.trustBlue,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // Pending High Priority Banner (Called Early)
+                        if (ticket.isPendingHigh) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.amber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.amber),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.bolt_rounded, color: AppColors.amber, size: 28),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'High Priority Pending',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.amber,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "We called you earlier than expected! You're high in line. Come whenever you can — the owner will fit you in next.",
+                                        style: GoogleFonts.inter(fontSize: 12, color: isDark ? AppColors.darkText : AppColors.neutralDark),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // Pending Low Priority Banner (Missed Estimate)
+                        if (ticket.isPendingLow) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEDD5),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFEA580C)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.history_toggle_off_rounded, color: Color(0xFFEA580C), size: 28),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Missed Turn Pending',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFFEA580C),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "You missed your estimated turn window. The owner will try to fit you in when possible.",
+                                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.neutralDark),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // Single Unified Hero Live Ticket Card with breathing pulse animation
+                        TokenCard(
+                          tokenNumber: ticket.tokenNumber,
+                          status: ticket.status,
+                          shopName: widget.shop.name,
+                          position: position,
+                          estimatedWaitMinutes: estimatedMinutes,
+                          currentlyServingTokenNumber: currentlyServingNum,
+                          lastCompletedTokenNumber: lastCompletedNum,
+                          nextWaitingTokenNumber: nextWaitingNum,
+                        ),
+                        const SizedBox(height: 16),
 
                       // Secondary Info Card (Plain White Card, Bordered)
                       Container(
@@ -380,6 +529,54 @@ class _CustomerTicketScreenState extends State<CustomerTicketScreen> {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Divider(height: 1, color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? AppColors.darkBackground : AppColors.primaryLight,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.schedule_rounded, color: AppColors.primary, size: 20),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Ticket Timestamps',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: AppColors.neutralMid,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Joined: ${_formatTime(ticket.joinedAt)}',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? AppColors.darkText : AppColors.neutralDark,
+                                        ),
+                                      ),
+                                      if (ticket.isPending && ticket.movedToPendingAt != null)
+                                        Text(
+                                          'Moved On Hold: ${_formatTime(ticket.movedToPendingAt)}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFFEA580C),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),

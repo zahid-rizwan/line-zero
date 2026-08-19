@@ -9,6 +9,10 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
   final WatchShopQueue watchShopQueue;
   final WatchCustomerActiveTickets watchCustomerActiveTickets;
   final JoinQueue joinQueue;
+  final AddWalkInTicket addWalkInTicket;
+  final ConfirmCheckpoint confirmCheckpoint;
+  final MoveToPending moveToPending;
+  final ReaddFromPending readdFromPending;
   final UpdateTicketStatus updateTicketStatus;
   final CallNextTicket callNextTicket;
 
@@ -21,6 +25,10 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
     required this.watchShopQueue,
     required this.watchCustomerActiveTickets,
     required this.joinQueue,
+    required this.addWalkInTicket,
+    required this.confirmCheckpoint,
+    required this.moveToPending,
+    required this.readdFromPending,
     required this.updateTicketStatus,
     required this.callNextTicket,
   }) : super(QueueInitial()) {
@@ -30,6 +38,10 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
     on<CustomerActiveTicketsUpdated>(_onCustomerActiveTicketsUpdated);
     on<QueueUpdatedEvent>(_onQueueUpdatedEvent);
     on<JoinQueueRequested>(_onJoinQueueRequested);
+    on<AddWalkInRequested>(_onAddWalkInRequested);
+    on<ConfirmCheckpointRequested>(_onConfirmCheckpointRequested);
+    on<MoveToPendingRequested>(_onMoveToPendingRequested);
+    on<ReaddFromPendingRequested>(_onReaddFromPendingRequested);
     on<UpdateStatusRequested>(_onUpdateStatusRequested);
     on<CallNextRequested>(_onCallNextRequested);
   }
@@ -163,6 +175,62 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
       _activeCustomerTicketsByShopId[event.shopId] = ticket;
     } catch (e) {
       emit(QueueError(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onAddWalkInRequested(
+    AddWalkInRequested event,
+    Emitter<QueueState> emit,
+  ) async {
+    try {
+      await addWalkInTicket(
+        shopId: event.shopId,
+        customerName: event.customerName,
+      );
+    } catch (e) {
+      emit(QueueError(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onConfirmCheckpointRequested(
+    ConfirmCheckpointRequested event,
+    Emitter<QueueState> emit,
+  ) async {
+    try {
+      await confirmCheckpoint(
+        shopId: event.shopId,
+        ticketId: event.ticketId,
+      );
+    } catch (e) {
+      emit(QueueError(e.toString()));
+    }
+  }
+
+  Future<void> _onMoveToPendingRequested(
+    MoveToPendingRequested event,
+    Emitter<QueueState> emit,
+  ) async {
+    try {
+      await moveToPending(
+        shopId: event.shopId,
+        ticketId: event.ticketId,
+      );
+    } catch (e) {
+      emit(QueueError(e.toString()));
+    }
+  }
+
+  Future<void> _onReaddFromPendingRequested(
+    ReaddFromPendingRequested event,
+    Emitter<QueueState> emit,
+  ) async {
+    try {
+      await readdFromPending(
+        shopId: event.shopId,
+        ticketId: event.ticketId,
+      );
+    } catch (e) {
+      emit(QueueError(e.toString()));
     }
   }
 

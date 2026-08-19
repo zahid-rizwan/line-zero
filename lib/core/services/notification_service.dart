@@ -149,6 +149,66 @@ class NotificationService {
     }
   }
 
+  static String _convertNumberToHindiWords(int number) {
+    const hindiWords = [
+      'शून्य', 'एक', 'दो', 'तीन', 'चार', 'पांच', 'छह', 'सात', 'आठ', 'नौ', 'दस',
+      'ग्यारह', 'बारह', 'तेरह', 'चौदह', 'पंद्रह', 'सोलह', 'सत्रह', 'अठारह', 'उन्नीस', 'बीस',
+      'इक्कीस', 'बाईस', 'तेईस', 'चौबीस', 'पच्चीस', 'छब्बीस', 'सत्ताईस', 'अट्ठाईस', 'उनतीस', 'तीस',
+      'इकतीस', 'बत्तीस', 'तैंतीस', 'चौंतीस', 'पैंतीस', 'छत्तीस', 'सैंतीस', 'अड़तीस', 'उनतालीस', 'चालीस',
+      'इकतालीस', 'बयालीस', 'तैंतालीस', 'चौवालीस', 'पैंतालीस', 'छियालीस', 'सैंतालीस', 'अड़तालीस', 'उनचास', 'पचास',
+      'इक्कावन', 'बावन', 'तिर्पन', 'चौवन', 'पचपन', 'छप्पन', 'सत्तावन', 'अट्टावन', 'उनसठ', 'साठ',
+      'इकसठ', 'बासठ', 'तिरसठ', 'चौंसठ', 'पैंसठ', 'छियासठ', 'सरसठ', 'अड़सठ', 'उनहत्तर', 'सत्तर',
+      'इकहत्तर', 'बहत्तर', 'तिहत्तर', 'चौहत्तर', 'पचहत्तर', 'छहत्तर', 'सतहत्तर', 'अठहत्तर', 'उनासी', 'अस्सी',
+      'इक्यासी', 'बयासी', 'तिरासी', 'चौरासी', 'पचासी', 'छियासी', 'सत्तासी', 'अट्ठासी', 'नवासी', 'नब्बे',
+      'इन्क्यान्वे', 'बान्बे', 'तिरान्बे', 'चौरान्बे', 'पञ्चान्बे', 'छियान्बे', 'सत्तानवे', 'अट्ठानवे', 'निन्यानवे', 'सौ'
+    ];
+    if (number >= 0 && number < hindiWords.length) {
+      return hindiWords[number];
+    }
+    return number.toString();
+  }
+
+  /// Speaks a loud, clear Shop Counter Announcement in BOTH English and Hindi
+  /// Format:
+  /// English: "Token number 4, Ramesh, please step to the counter."
+  /// Hindi: "टोकन नंबर चार, रमेश, कृपया काउंटर पर आएं।"
+  Future<void> speakBilingualTokenAnnouncement({
+    required int tokenNumber,
+    required String customerName,
+  }) async {
+    try {
+      await _flutterTts.stop();
+      await _flutterTts.awaitSpeakCompletion(true);
+
+      final cleanName = (customerName.trim().isEmpty || customerName == 'Walk-in') ? '' : customerName.trim();
+      final nameText = cleanName.isNotEmpty ? '$cleanName, ' : '';
+
+      // 1. English Announcement
+      await _flutterTts.setLanguage("en-IN");
+      await _flutterTts.setSpeechRate(0.46);
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.0);
+
+      final englishSpeech = "Attention please. Token number $tokenNumber, ${nameText}please come to the counter.";
+      await _flutterTts.speak(englishSpeech);
+
+      // Short pause between English & Hindi
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      // 2. Hindi Announcement
+      await _flutterTts.setLanguage("hi-IN");
+      await _flutterTts.setSpeechRate(0.44);
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.0);
+
+      final hindiTokenWord = _convertNumberToHindiWords(tokenNumber);
+      final hindiSpeech = "कृपया ध्यान दें। टोकन संख्या $hindiTokenWord, $nameTextकृपया काउंटर पर आएं।";
+      await _flutterTts.speak(hindiSpeech);
+    } catch (e) {
+      debugPrint('Bilingual token announcement error: $e');
+    }
+  }
+
   /// Show a real System Heads-Up Notification on the Android device status bar and speak voice announcement in Hindi
   Future<void> showSystemNotification({
     required String title,

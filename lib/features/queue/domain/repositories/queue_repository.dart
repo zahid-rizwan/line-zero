@@ -8,6 +8,22 @@ abstract class QueueRepository {
     required String customerId,
     required String customerName,
   });
+  Future<TicketEntity> addWalkInTicket({
+    required String shopId,
+    String? customerName,
+  });
+  Future<void> confirmCheckpoint({
+    required String shopId,
+    required String ticketId,
+  });
+  Future<void> moveToPending({
+    required String shopId,
+    required String ticketId,
+  });
+  Future<void> readdFromPending({
+    required String shopId,
+    required String ticketId,
+  });
   Future<void> updateTicketStatus({
     required String shopId,
     required String ticketId,

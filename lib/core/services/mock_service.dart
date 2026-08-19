@@ -83,9 +83,16 @@ class MockTicket {
   final String customerId;
   final String customerName;
   final int tokenNumber;
-  final String status; // 'waiting' | 'in_service' | 'completed' | 'skipped' | 'cancelled'
+  final String status; // 'waiting' | 'confirmed' | 'called' | 'held' | 'in_service' | 'pending' | 'completed' | 'skipped' | 'cancelled' | 'no_show'
   final DateTime joinedAt;
   final DateTime? calledAt;
+  final DateTime? originalEstimatedReadyAt;
+  final DateTime? confirmedAt;
+  final DateTime? heldUntil;
+  final bool extensionUsed;
+  final DateTime? movedToPendingAt;
+  final String? pendingPriority; // 'high' | 'low' | null
+  final bool isWalkIn;
 
   MockTicket({
     required this.id,
@@ -96,6 +103,13 @@ class MockTicket {
     required this.status,
     required this.joinedAt,
     this.calledAt,
+    this.originalEstimatedReadyAt,
+    this.confirmedAt,
+    this.heldUntil,
+    this.extensionUsed = false,
+    this.movedToPendingAt,
+    this.pendingPriority,
+    this.isWalkIn = false,
   });
 
   Map<String, dynamic> toMap() => {
@@ -107,6 +121,13 @@ class MockTicket {
         'status': status,
         'joinedAt': joinedAt.toIso8601String(),
         'calledAt': calledAt?.toIso8601String(),
+        'originalEstimatedReadyAt': originalEstimatedReadyAt?.toIso8601String(),
+        'confirmedAt': confirmedAt?.toIso8601String(),
+        'heldUntil': heldUntil?.toIso8601String(),
+        'extensionUsed': extensionUsed,
+        'movedToPendingAt': movedToPendingAt?.toIso8601String(),
+        'pendingPriority': pendingPriority,
+        'isWalkIn': isWalkIn,
       };
 
   factory MockTicket.fromMap(Map<String, dynamic> map) => MockTicket(
@@ -118,11 +139,29 @@ class MockTicket {
         status: map['status'] ?? 'waiting',
         joinedAt: DateTime.parse(map['joinedAt']),
         calledAt: map['calledAt'] != null ? DateTime.parse(map['calledAt']) : null,
+        originalEstimatedReadyAt: map['originalEstimatedReadyAt'] != null
+            ? DateTime.parse(map['originalEstimatedReadyAt'])
+            : null,
+        confirmedAt: map['confirmedAt'] != null ? DateTime.parse(map['confirmedAt']) : null,
+        heldUntil: map['heldUntil'] != null ? DateTime.parse(map['heldUntil']) : null,
+        extensionUsed: map['extensionUsed'] ?? false,
+        movedToPendingAt: map['movedToPendingAt'] != null
+            ? DateTime.parse(map['movedToPendingAt'])
+            : null,
+        pendingPriority: map['pendingPriority'],
+        isWalkIn: map['isWalkIn'] ?? false,
       );
 
   MockTicket copyWith({
     String? status,
     DateTime? calledAt,
+    DateTime? originalEstimatedReadyAt,
+    DateTime? confirmedAt,
+    DateTime? heldUntil,
+    bool? extensionUsed,
+    DateTime? movedToPendingAt,
+    String? pendingPriority,
+    bool? isWalkIn,
   }) {
     return MockTicket(
       id: id,
@@ -133,6 +172,13 @@ class MockTicket {
       status: status ?? this.status,
       joinedAt: joinedAt,
       calledAt: calledAt ?? this.calledAt,
+      originalEstimatedReadyAt: originalEstimatedReadyAt ?? this.originalEstimatedReadyAt,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      heldUntil: heldUntil ?? this.heldUntil,
+      extensionUsed: extensionUsed ?? this.extensionUsed,
+      movedToPendingAt: movedToPendingAt ?? this.movedToPendingAt,
+      pendingPriority: pendingPriority ?? this.pendingPriority,
+      isWalkIn: isWalkIn ?? this.isWalkIn,
     );
   }
 }
@@ -430,13 +476,17 @@ class MockDatabaseService {
     }
 
     final shopQueue = _queues[shopId] ?? [];
-    final alreadyIn = shopQueue.any((t) => t.customerId == customerId && (t.status == 'waiting' || t.status == 'in_service'));
+    final alreadyIn = shopQueue.any((t) => t.customerId == customerId && (t.status == 'waiting' || t.status == 'confirmed' || t.status == 'in_service'));
     if (alreadyIn) {
       throw Exception('You already have an active ticket in this queue.');
     }
 
     final nextTokenNumber = (_lastTokenCounters[shopId] ?? 0) + 1;
     _lastTokenCounters[shopId] = nextTokenNumber;
+
+    final now = DateTime.now();
+    final estimatedWaitMins = shopQueue.where((t) => t.status == 'waiting' || t.status == 'confirmed').length * shop.avgServiceTimeMinutes;
+    final originalEst = now.add(Duration(minutes: estimatedWaitMins));
 
     final ticket = MockTicket(
       id: 'ticket-${const Uuid().v4().substring(0, 8)}',
@@ -445,7 +495,9 @@ class MockDatabaseService {
       customerName: customerName,
       tokenNumber: nextTokenNumber,
       status: 'waiting',
-      joinedAt: DateTime.now(),
+      joinedAt: now,
+      originalEstimatedReadyAt: originalEst,
+      isWalkIn: false,
     );
 
     shopQueue.add(ticket);
@@ -455,6 +507,98 @@ class MockDatabaseService {
     return ticket;
   }
 
+  /// Add Walk-in customer directly from Owner Dashboard (atomic counter)
+  Future<MockTicket> addWalkInTicket(String shopId, String? name) async {
+    final shop = await getShopById(shopId);
+    if (shop == null || !shop.isQueueOpen) {
+      throw Exception('Queue is currently closed.');
+    }
+
+    final shopQueue = _queues[shopId] ?? [];
+    final nextTokenNumber = (_lastTokenCounters[shopId] ?? 0) + 1;
+    _lastTokenCounters[shopId] = nextTokenNumber;
+
+    final displayName = (name != null && name.trim().isNotEmpty)
+        ? name.trim()
+        : 'Walk-in #$nextTokenNumber';
+
+    final now = DateTime.now();
+    final estimatedWaitMins = shopQueue.where((t) => t.status == 'waiting' || t.status == 'confirmed').length * shop.avgServiceTimeMinutes;
+    final originalEst = now.add(Duration(minutes: estimatedWaitMins));
+
+    final ticket = MockTicket(
+      id: 'ticket-${const Uuid().v4().substring(0, 8)}',
+      shopId: shopId,
+      customerId: '',
+      customerName: displayName,
+      tokenNumber: nextTokenNumber,
+      status: 'waiting',
+      joinedAt: now,
+      originalEstimatedReadyAt: originalEst,
+      isWalkIn: true,
+    );
+
+    shopQueue.add(ticket);
+    _queues[shopId] = shopQueue;
+    _notifyQueueChanged(shopId);
+
+    return ticket;
+  }
+
+  Future<void> confirmCheckpoint(String shopId, String ticketId) async {
+    final shopQueue = _queues[shopId] ?? [];
+    final index = shopQueue.indexWhere((t) => t.id == ticketId);
+    if (index != -1) {
+      shopQueue[index] = shopQueue[index].copyWith(
+        status: 'confirmed',
+        confirmedAt: DateTime.now(),
+      );
+      _queues[shopId] = shopQueue;
+      _notifyQueueChanged(shopId);
+    }
+  }
+
+  Future<void> moveToPending(String shopId, String ticketId) async {
+    final shopQueue = _queues[shopId] ?? [];
+    final index = shopQueue.indexWhere((t) => t.id == ticketId);
+    if (index != -1) {
+      final t = shopQueue[index];
+      final now = DateTime.now();
+      final callTime = t.calledAt ?? now;
+
+      // Pending Priority Logic:
+      // If calledAt is 10+ minutes earlier than originalEstimatedReadyAt -> High priority (called early / queue collapsed)
+      // Else -> Low priority (missed actual estimated window)
+      String priority = 'low';
+      if (t.originalEstimatedReadyAt != null) {
+        final diffMins = t.originalEstimatedReadyAt!.difference(callTime).inMinutes;
+        if (diffMins >= 10) {
+          priority = 'high';
+        }
+      }
+
+      shopQueue[index] = t.copyWith(
+        status: 'pending',
+        movedToPendingAt: now,
+        pendingPriority: priority,
+      );
+      _queues[shopId] = shopQueue;
+      _notifyQueueChanged(shopId);
+    }
+  }
+
+  Future<void> readdFromPending(String shopId, String ticketId) async {
+    final shopQueue = _queues[shopId] ?? [];
+    final index = shopQueue.indexWhere((t) => t.id == ticketId);
+    if (index != -1) {
+      shopQueue[index] = shopQueue[index].copyWith(
+        status: 'waiting',
+      );
+      _queues[shopId] = shopQueue;
+      _notifyQueueChanged(shopId);
+    }
+  }
+
   Future<void> updateTicketStatus(String shopId, String ticketId, String newStatus) async {
     final shopQueue = _queues[shopId] ?? [];
     final index = shopQueue.indexWhere((t) => t.id == ticketId);
@@ -462,12 +606,12 @@ class MockDatabaseService {
       final t = shopQueue[index];
       shopQueue[index] = t.copyWith(
         status: newStatus,
-        calledAt: newStatus == 'in_service' ? DateTime.now() : t.calledAt,
+        calledAt: newStatus == 'in_service' || newStatus == 'called' ? DateTime.now() : t.calledAt,
       );
       _queues[shopId] = shopQueue;
       _notifyQueueChanged(shopId);
 
-      if (newStatus == 'in_service') {
+      if ((newStatus == 'in_service' || newStatus == 'called') && !t.isWalkIn) {
         final shop = _shops.firstWhere((s) => s.id == shopId, orElse: () => _shops.first);
         NotificationService.instance.showSystemNotification(
           title: '🚨 YOUR TURN NOW! (आपकी बारी!)',

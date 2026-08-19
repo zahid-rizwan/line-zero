@@ -61,3 +61,63 @@ class CallNextTicket {
     return repository.callNextTicket(shopId);
   }
 }
+
+class AddWalkInTicket {
+  final QueueRepository repository;
+  AddWalkInTicket(this.repository);
+
+  Future<TicketEntity> call({
+    required String shopId,
+    String? customerName,
+  }) {
+    return repository.addWalkInTicket(
+      shopId: shopId,
+      customerName: customerName,
+    );
+  }
+}
+
+class ConfirmCheckpoint {
+  final QueueRepository repository;
+  ConfirmCheckpoint(this.repository);
+
+  Future<void> call({
+    required String shopId,
+    required String ticketId,
+  }) {
+    return repository.confirmCheckpoint(
+      shopId: shopId,
+      ticketId: ticketId,
+    );
+  }
+}
+
+class MoveToPending {
+  final QueueRepository repository;
+  MoveToPending(this.repository);
+
+  Future<void> call({
+    required String shopId,
+    required String ticketId,
+  }) {
+    return repository.moveToPending(
+      shopId: shopId,
+      ticketId: ticketId,
+    );
+  }
+}
+
+class ReaddFromPending {
+  final QueueRepository repository;
+  ReaddFromPending(this.repository);
+
+  Future<void> call({
+    required String shopId,
+    required String ticketId,
+  }) {
+    return repository.readdFromPending(
+      shopId: shopId,
+      ticketId: ticketId,
+    );
+  }
+}

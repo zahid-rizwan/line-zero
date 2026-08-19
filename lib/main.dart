@@ -73,6 +73,10 @@ class QTokenApp extends StatelessWidget {
     final watchShopQueue = WatchShopQueue(queueRepository);
     final watchCustomerActiveTickets = WatchCustomerActiveTickets(queueRepository);
     final joinQueue = JoinQueue(queueRepository);
+    final addWalkInTicket = AddWalkInTicket(queueRepository);
+    final confirmCheckpoint = ConfirmCheckpoint(queueRepository);
+    final moveToPending = MoveToPending(queueRepository);
+    final readdFromPending = ReaddFromPending(queueRepository);
     final updateTicketStatus = UpdateTicketStatus(queueRepository);
     final callNextTicket = CallNextTicket(queueRepository);
 
@@ -109,6 +113,10 @@ class QTokenApp extends StatelessWidget {
             watchShopQueue: watchShopQueue,
             watchCustomerActiveTickets: watchCustomerActiveTickets,
             joinQueue: joinQueue,
+            addWalkInTicket: addWalkInTicket,
+            confirmCheckpoint: confirmCheckpoint,
+            moveToPending: moveToPending,
+            readdFromPending: readdFromPending,
             updateTicketStatus: updateTicketStatus,
             callNextTicket: callNextTicket,
           ),

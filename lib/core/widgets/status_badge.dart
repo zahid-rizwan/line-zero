@@ -16,12 +16,22 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'waiting':
         return 'Waiting';
+      case 'confirmed':
+        return 'Confirmed';
+      case 'called':
+        return 'Called';
+      case 'held':
+        return 'Spot Held';
       case 'in_service':
         return 'In service';
+      case 'pending':
+        return 'Pending';
       case 'completed':
         return 'Completed';
       case 'skipped':
         return 'Skipped';
+      case 'no_show':
+        return 'No Show';
       case 'cancelled':
         return 'Cancelled';
       default:
@@ -33,12 +43,22 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'waiting':
         return Icons.hourglass_top_rounded;
+      case 'confirmed':
+        return Icons.verified_user_rounded;
+      case 'called':
+        return Icons.phone_callback_rounded;
+      case 'held':
+        return Icons.lock_clock_rounded;
       case 'in_service':
         return Icons.notifications_active_rounded;
+      case 'pending':
+        return Icons.history_toggle_off_rounded;
       case 'completed':
         return Icons.check_circle_rounded;
       case 'skipped':
         return Icons.redo_rounded;
+      case 'no_show':
+        return Icons.person_off_rounded;
       case 'cancelled':
         return Icons.cancel_rounded;
       default:

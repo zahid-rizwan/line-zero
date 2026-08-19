@@ -46,11 +46,19 @@ abstract class AppColors {
     switch (status.toLowerCase()) {
       case 'waiting':
         return primary;
+      case 'confirmed':
+        return trustBlue;
+      case 'called':
       case 'in_service':
         return amber;
+      case 'held':
+        return warningUrgent;
+      case 'pending':
+        return const Color(0xFFEA580C); // Burnt Orange
       case 'completed':
         return success;
       case 'skipped':
+      case 'no_show':
         return skipped;
       case 'cancelled':
         return warningUrgent;
@@ -63,11 +71,18 @@ abstract class AppColors {
     switch (status.toLowerCase()) {
       case 'waiting':
         return primaryLight;
+      case 'confirmed':
+        return const Color(0xFFEFF6FF);
+      case 'called':
       case 'in_service':
         return amberLight;
+      case 'held':
+      case 'pending':
+        return const Color(0xFFFFEDD5);
       case 'completed':
         return successLight;
       case 'skipped':
+      case 'no_show':
         return skippedLight;
       case 'cancelled':
         return warningLight;

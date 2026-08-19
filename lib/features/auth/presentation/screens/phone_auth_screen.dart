@@ -17,7 +17,6 @@ class PhoneAuthScreen extends StatefulWidget {
 
 class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   bool _isSignUp = false;
-  bool _isDevQuickLoginExpanded = false;
 
   // Controllers
   final _emailController = TextEditingController();
@@ -73,15 +72,6 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
             ),
           );
     }
-  }
-
-  void _fillDemoCredentials(String email, String password, String name) {
-    setState(() {
-      _emailController.text = email;
-      _passwordController.text = password;
-      _nameController.text = name;
-      _isSignUp = false;
-    });
   }
 
   @override
@@ -318,84 +308,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
-
-                      // Collapsed Dev Quick Login Accordion
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () => setState(() => _isDevQuickLoginExpanded = !_isDevQuickLoginExpanded),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _isDevQuickLoginExpanded
-                                      ? Icons.arrow_drop_down_rounded
-                                      : Icons.arrow_right_rounded,
-                                  size: 20,
-                                  color: AppColors.neutralMid,
-                                ),
-                                Text(
-                                  'Dev quick login',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.neutralMid,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (_isDevQuickLoginExpanded) ...[
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () => _fillDemoCredentials('admin@queuetoken.app', 'admin123', 'Super Admin'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF3F4F6),
-                                      foregroundColor: isDark ? AppColors.darkText : AppColors.neutralDark,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                    child: const Text('Admin', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () => _fillDemoCredentials('owner@clinic.com', 'owner123', 'Dr. Sharma'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF3F4F6),
-                                      foregroundColor: isDark ? AppColors.darkText : AppColors.neutralDark,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                    child: const Text('Owner', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () => _fillDemoCredentials('customer@queuetoken.app', '123456', 'Alex Rivers'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF3F4F6),
-                                      foregroundColor: isDark ? AppColors.darkText : AppColors.neutralDark,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                    child: const Text('Customer', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),

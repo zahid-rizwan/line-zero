@@ -78,3 +78,55 @@ class CallNextRequested extends QueueEvent {
   @override
   List<Object?> get props => [shopId];
 }
+
+class AddWalkInRequested extends QueueEvent {
+  final String shopId;
+  final String? customerName;
+
+  const AddWalkInRequested({
+    required this.shopId,
+    this.customerName,
+  });
+
+  @override
+  List<Object?> get props => [shopId, customerName];
+}
+
+class ConfirmCheckpointRequested extends QueueEvent {
+  final String shopId;
+  final String ticketId;
+
+  const ConfirmCheckpointRequested({
+    required this.shopId,
+    required this.ticketId,
+  });
+
+  @override
+  List<Object?> get props => [shopId, ticketId];
+}
+
+class MoveToPendingRequested extends QueueEvent {
+  final String shopId;
+  final String ticketId;
+
+  const MoveToPendingRequested({
+    required this.shopId,
+    required this.ticketId,
+  });
+
+  @override
+  List<Object?> get props => [shopId, ticketId];
+}
+
+class ReaddFromPendingRequested extends QueueEvent {
+  final String shopId;
+  final String ticketId;
+
+  const ReaddFromPendingRequested({
+    required this.shopId,
+    required this.ticketId,
+  });
+
+  @override
+  List<Object?> get props => [shopId, ticketId];
+}

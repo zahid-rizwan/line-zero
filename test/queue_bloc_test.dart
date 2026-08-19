@@ -34,6 +34,41 @@ class FakeQueueRepository implements QueueRepository {
   }
 
   @override
+  Future<TicketEntity> addWalkInTicket({
+    required String shopId,
+    String? customerName,
+  }) async {
+    return TicketEntity(
+      id: 't-walkin',
+      shopId: shopId,
+      customerId: '',
+      customerName: customerName ?? 'Walk-in #1',
+      tokenNumber: 99,
+      status: 'waiting',
+      joinedAt: DateTime.now(),
+      isWalkIn: true,
+    );
+  }
+
+  @override
+  Future<void> confirmCheckpoint({
+    required String shopId,
+    required String ticketId,
+  }) async {}
+
+  @override
+  Future<void> moveToPending({
+    required String shopId,
+    required String ticketId,
+  }) async {}
+
+  @override
+  Future<void> readdFromPending({
+    required String shopId,
+    required String ticketId,
+  }) async {}
+
+  @override
   Future<void> updateTicketStatus({
     required String shopId,
     required String ticketId,
@@ -81,6 +116,10 @@ void main() {
       final watchShopQueue = WatchShopQueue(fakeRepo);
       final watchCustomerActiveTickets = WatchCustomerActiveTickets(fakeRepo);
       final joinQueue = JoinQueue(fakeRepo);
+      final addWalkInTicket = AddWalkInTicket(fakeRepo);
+      final confirmCheckpoint = ConfirmCheckpoint(fakeRepo);
+      final moveToPending = MoveToPending(fakeRepo);
+      final readdFromPending = ReaddFromPending(fakeRepo);
       final updateTicketStatus = UpdateTicketStatus(fakeRepo);
       final callNextTicket = CallNextTicket(fakeRepo);
 
@@ -88,6 +127,10 @@ void main() {
         watchShopQueue: watchShopQueue,
         watchCustomerActiveTickets: watchCustomerActiveTickets,
         joinQueue: joinQueue,
+        addWalkInTicket: addWalkInTicket,
+        confirmCheckpoint: confirmCheckpoint,
+        moveToPending: moveToPending,
+        readdFromPending: readdFromPending,
         updateTicketStatus: updateTicketStatus,
         callNextTicket: callNextTicket,
       );
