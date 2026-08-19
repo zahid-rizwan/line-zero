@@ -35,7 +35,8 @@ class TicketEntity extends Equatable {
     this.isWalkIn = false,
   });
 
-  bool get isWaiting => status == 'waiting';
+  bool get isWaiting => status == 'waiting' || status == 'confirmed' || status == 'called' || status == 'held';
+  bool get isPureWaiting => status == 'waiting';
   bool get isConfirmed => status == 'confirmed';
   bool get isCalled => status == 'called';
   bool get isHeld => status == 'held';

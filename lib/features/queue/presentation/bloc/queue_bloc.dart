@@ -93,7 +93,7 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
   ) {
     final Map<String, TicketEntity> map = {};
     for (var ticket in event.activeTickets) {
-      if (ticket.status == 'waiting' || ticket.status == 'in_service') {
+      if (!ticket.isCompleted && !ticket.isCancelled && !ticket.isSkipped) {
         map[ticket.shopId] = ticket;
       }
     }
@@ -121,7 +121,7 @@ class QueueBloc extends Bloc<QueueEvent, QueueState> {
     if (_currentCustomerId != null) {
       try {
         customerTicket = event.tickets.firstWhere(
-          (t) => t.customerId == _currentCustomerId && (t.status == 'waiting' || t.status == 'in_service'),
+          (t) => t.customerId == _currentCustomerId && !t.isCompleted && !t.isCancelled && !t.isSkipped,
         );
       } catch (_) {
         customerTicket = null;

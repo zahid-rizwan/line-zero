@@ -335,6 +335,48 @@ class _CustomerTicketScreenState extends State<CustomerTicketScreen> {
                           ),
                         ],
 
+                        // Checkpoint Confirmed Banner (When customer tapped "I'm On My Way")
+                        if (ticket.isConfirmed && (ticket.isWaiting || ticket.status == 'waiting' || ticket.status == 'confirmed')) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Spot Confirmed! On My Way",
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.success,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "We informed the shop owner that you are arriving. Your spot is locked!",
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: isDark ? AppColors.darkText : AppColors.neutralDark,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         // Pending High Priority Banner (Called Early)
                         if (ticket.isPendingHigh) ...[
                           Container(
@@ -417,6 +459,7 @@ class _CustomerTicketScreenState extends State<CustomerTicketScreen> {
                         TokenCard(
                           tokenNumber: ticket.tokenNumber,
                           status: ticket.status,
+                          isConfirmed: ticket.isConfirmed,
                           shopName: widget.shop.name,
                           position: position,
                           estimatedWaitMinutes: estimatedMinutes,

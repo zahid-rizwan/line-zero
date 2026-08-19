@@ -6,6 +6,7 @@ import 'status_badge.dart';
 class TokenCard extends StatefulWidget {
   final int tokenNumber;
   final String status;
+  final bool isConfirmed;
   final int? position;
   final String shopName;
   final int? estimatedWaitMinutes;
@@ -18,6 +19,7 @@ class TokenCard extends StatefulWidget {
     super.key,
     required this.tokenNumber,
     required this.status,
+    this.isConfirmed = false,
     required this.shopName,
     this.position,
     this.estimatedWaitMinutes,
@@ -140,7 +142,12 @@ class _TokenCardState extends State<TokenCard> with SingleTickerProviderStateMix
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      StatusBadge(status: widget.status, isLarge: true),
+                      StatusBadge(
+                        status: (widget.isConfirmed && (widget.status == 'waiting' || widget.status == 'confirmed'))
+                            ? 'confirmed'
+                            : widget.status,
+                        isLarge: true,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),

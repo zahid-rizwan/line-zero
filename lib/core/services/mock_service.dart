@@ -450,7 +450,7 @@ class MockDatabaseService {
       final activeTickets = <MockTicket>[];
       for (var queue in _queues.values) {
         for (var t in queue) {
-          if (t.customerId == customerId && (t.status == 'waiting' || t.status == 'in_service')) {
+          if (t.customerId == customerId && (t.status == 'waiting' || t.status == 'confirmed' || t.status == 'called' || t.status == 'in_service' || t.status == 'pending' || t.status == 'held')) {
             activeTickets.add(t);
           }
         }
@@ -632,7 +632,7 @@ class MockDatabaseService {
     }
 
     // Call first waiting ticket
-    final nextWaitingIndex = shopQueue.indexWhere((t) => t.status == 'waiting');
+    final nextWaitingIndex = shopQueue.indexWhere((t) => t.status == 'waiting' || t.status == 'confirmed' || t.status == 'called' || t.status == 'held');
     MockTicket? calledTicket;
     if (nextWaitingIndex != -1) {
       shopQueue[nextWaitingIndex] = shopQueue[nextWaitingIndex].copyWith(
